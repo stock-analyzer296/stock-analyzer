@@ -7,6 +7,11 @@
 
 from flask import Flask, render_template, request, jsonify
 import yfinance as yf
+try:
+    from curl_cffi import requests as cffi_requests
+    _cffi_available = True
+except ImportError:
+    _cffi_available = False
 import pandas as pd
 import numpy as np
 import requests as http_requests
@@ -127,7 +132,11 @@ def fetch_history(ticker_symbol: str, period: str = "1y", retries: int = 3) -> p
 
     for attempt in range(retries):
         try:
-            hist = yf.Ticker(ticker_symbol).history(period=period)
+            if _cffi_available:
+                session = cffi_requests.Session(impersonate="chrome")
+                hist = yf.Ticker(ticker_symbol, session=session).history(period=period)
+            else:
+                hist = yf.Ticker(ticker_symbol).history(period=period)
             if not hist.empty:
                 cache_set(cache_key, hist)
                 return hist
