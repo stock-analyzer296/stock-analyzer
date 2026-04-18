@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVESTPRO — מחשבון + ניתוח מניות</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #0d1117; color: #e6edf3; font-family: 'Heebo', sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #161b22; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, #161b22 0%, #0d1520 100%);
+      border-bottom: 1px solid #21262d;
+      padding: 1rem 2rem;
+    }
+    .app-header h1 { font-size: 1.5rem; font-weight: 800; color: #58a6ff; margin: 0; letter-spacing: .04em; }
+    .app-header .sub { font-size: 0.78rem; color: #8b949e; }
+
+    /* Cards */
+    .card { background: #161b22; border: 1px solid #21262d; border-radius: 12px; }
+    .card-lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: #8b949e; font-weight: 600; margin-bottom: .75rem; }
+
+    /* Inputs */
+    .form-label { font-size: .82rem; color: #8b949e; margin-bottom: .3rem; }
+    .form-control { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 8px; font-family: 'Heebo', sans-serif; }
+    .form-control:focus { background: #0d1117; border-color: #58a6ff; color: #e6edf3; box-shadow: 0 0 0 3px rgba(88,166,255,.12); }
+    .form-control::placeholder { color: #484f58; }
+    .input-group-text { background: #161b22; border: 1px solid #30363d; color: #8b949e; font-size: .82rem; }
+
+    /* Ticker bar */
+    .ticker-bar { background: #161b22; border: 1px solid #21262d; border-radius: 14px; padding: 1.2rem 1.5rem; margin-bottom: 1.2rem; }
+    .ticker-input { font-size: 1.4rem !important; font-weight: 800 !important; text-align: center; letter-spacing: .08em; border: 2px solid #30363d !important; }
+    .ticker-input:focus { border-color: #58a6ff !important; box-shadow: 0 0 0 3px rgba(88,166,255,.15) !important; }
+
+    /* Buttons */
+    .btn-fetch { background: #1f6feb; color: #fff; border: none; border-radius: 8px; font-family: 'Heebo', sans-serif; font-weight: 700; padding: .55rem 1.2rem; font-size: .9rem; cursor: pointer; transition: background .2s; white-space: nowrap; }
+    .btn-fetch:hover { background: #388bfd; }
+    .btn-fetch:disabled { background: #21262d; color: #6e7681; cursor: not-allowed; }
+    .btn-macro { background: linear-gradient(135deg, #9e6a03, #e3b341); color: #0d1117; border: none; border-radius: 8px; font-family: 'Heebo', sans-serif; font-weight: 700; padding: .55rem 1.2rem; font-size: .9rem; cursor: pointer; transition: all .2s; white-space: nowrap; }
+    .btn-macro:hover { opacity: .85; }
+
+    /* Live price badge */
+    .live-badge { background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.3); border-radius: 8px; padding: .35rem .8rem; font-size: .8rem; color: #3fb950; display: none; }
+    .fetch-status { font-size: .76rem; color: #8b949e; margin-top: .35rem; min-height: 1rem; }
+    .fetch-status.ok { color: #3fb950; }
+    .fetch-status.err { color: #f85149; }
+
+    /* Spinner */
+    .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #484f58; border-top-color: #58a6ff; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 5px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Tabs */
+    .nav-tabs { border-bottom: 1px solid #21262d; margin-bottom: 1.2rem; }
+    .nav-tabs .nav-link { color: #8b949e; border: none; border-bottom: 2px solid transparent; background: transparent; font-weight: 600; font-size: .88rem; padding: .55rem 1.1rem; transition: all .2s; }
+    .nav-tabs .nav-link:hover { color: #e6edf3; }
+    .nav-tabs .nav-link.active { color: #58a6ff; border-bottom-color: #58a6ff; background: transparent; }
+
+    /* Result main (shares) */
+    .result-main { background: linear-gradient(135deg, #1a2332, #161b22); border: 1px solid #21262d; border-radius: 12px; text-align: center; padding: 1.6rem; }
+    .shares-num { font-size: 3.2rem; font-weight: 800; color: #58a6ff; line-height: 1; }
+    .shares-lbl { font-size: .82rem; color: #8b949e; margin-top: .3rem; }
+
+    /* Stat boxes */
+    .stat-box { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: .85rem 1rem; }
+    .stat-label { font-size: .72rem; color: #8b949e; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-val { font-size: 1rem; font-weight: 700; color: #e6edf3; margin-top: .2rem; }
+    .stat-sub { font-size: .76rem; color: #6e7681; margin-top: .12rem; }
+
+    /* Stop box */
+    .stop-box { background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.3); border-radius: 10px; padding: .9rem 1rem; }
+    .stop-val { font-size: 1.2rem; font-weight: 700; color: #f85149; }
+    .stop-sub { font-size: .78rem; color: #8b949e; }
+
+    /* Target boxes */
+    .target-box { background: #0d1117; border-radius: 10px; padding: .8rem .9rem; border-right: 3px solid; }
+    .target-box.t1 { border-color: #3fb950; }
+    .target-box.t2 { border-color: #58a6ff; }
+    .target-box.t3 { border-color: #d2a8ff; }
+    .t-label { font-size: .7rem; color: #8b949e; text-transform: uppercase; }
+    .t-val { font-size: .95rem; font-weight: 700; margin-top: .18rem; }
+    .target-box.t1 .t-val { color: #3fb950; }
+    .target-box.t2 .t-val { color: #58a6ff; }
+    .target-box.t3 .t-val { color: #d2a8ff; }
+    .t-sub { font-size: .74rem; color: #6e7681; }
+
+    /* Risk meter */
+    .risk-meter { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: .9rem 1rem; }
+    .risk-bar-bg { height: 9px; background: #21262d; border-radius: 5px; overflow: hidden; margin: .45rem 0; }
+    .risk-bar-fill { height: 100%; border-radius: 5px; transition: width .4s ease, background .4s ease; }
+    .risk-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+    /* Error */
+    .error-box { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); border-radius: 8px; color: #f85149; font-size: .83rem; padding: .55rem 1rem; display: none; }
+
+    /* Section divider */
+    .section-lbl { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: #484f58; margin-bottom: .65rem; margin-top: .15rem; }
+
+    /* ══ Analysis Section ══ */
+    .analysis-section { border-top: 1px solid #21262d; margin-top: 1.5rem; padding-top: 1.5rem; }
+    .analysis-title { font-size: 1rem; font-weight: 700; color: #e6edf3; margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem; }
+
+    /* Grade badge */
+    .grade-badge { width: 90px; height: 90px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.8rem; font-weight: 900; margin: 0 auto; box-shadow: 0 0 30px var(--glow); border: 3px solid var(--clr); color: var(--clr); }
+    .grade-A { --clr: #3fb950; --glow: rgba(63,185,80,.4); }
+    .grade-B { --clr: #56d364; --glow: rgba(86,211,100,.3); }
+    .grade-C { --clr: #e3b341; --glow: rgba(227,179,65,.3); }
+    .grade-D { --clr: #f85149; --glow: rgba(248,81,73,.3); }
+    .grade-lbl { font-size: .8rem; font-weight: 700; margin-top: .35rem; text-align: center; }
+    .grade-lbl.A { color: #3fb950; }
+    .grade-lbl.B { color: #56d364; }
+    .grade-lbl.C { color: #e3b341; }
+    .grade-lbl.D { color: #f85149; }
+
+    /* Score bars */
+    .score-bar-wrap { margin-bottom: .6rem; }
+    .score-bar-row { display: flex; justify-content: space-between; font-size: .8rem; margin-bottom: .18rem; }
+    .score-bar-row span:first-child { color: #8b949e; }
+    .score-bar-row span:last-child { font-weight: 700; }
+    .progress { background: #21262d; border-radius: 6px; height: 7px; }
+    .progress-bar { border-radius: 6px; transition: width .8s ease; }
+
+    /* Indicators grid */
+    .ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .65rem; }
+    .ind-item { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: .7rem; text-align: center; }
+    .ind-item .val { font-size: 1.2rem; font-weight: 800; line-height: 1; }
+    .ind-item .lbl { font-size: .68rem; color: #8b949e; margin-top: .18rem; }
+
+    /* Trade levels */
+    .levels-table td, .levels-table th { padding: .45rem .8rem; font-size: .85rem; border-color: #21262d !important; }
+    .levels-table tbody tr:hover { background: rgba(88,166,255,.05); }
+    .level-entry  { color: #3fb950; font-weight: 700; }
+    .level-stop2  { color: #f85149; font-weight: 700; }
+    .level-target { color: #56d364; }
+    .level-rr     { color: #e3b341; font-weight: 700; }
+
+    /* Pros / Cons */
+    .pro-item, .con-item { display: flex; align-items: flex-start; gap: .45rem; padding: .4rem 0; font-size: .83rem; border-bottom: 1px solid #21262d; }
+    .pro-item:last-child, .con-item:last-child { border-bottom: none; }
+    .pro-item span:last-child { color: #3fb950; }
+    .con-item span:last-child { color: #f85149; }
+
+    /* Pos metric */
+    .pos-metric { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: .8rem; text-align: center; }
+    .pos-metric .val { font-size: 1.1rem; font-weight: 800; color: #58a6ff; }
+    .pos-metric .lbl { font-size: .68rem; color: #8b949e; margin-top: .18rem; }
+
+    /* Macro */
+    .macro-item { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: .7rem 1rem; display: flex; align-items: center; gap: .7rem; }
+    .macro-val { font-size: 1.1rem; font-weight: 800; }
+
+    /* Desc */
+    .desc-text { font-size: .95rem; color: #c9d1d9; line-height: 1.8; background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: 1rem; }
+
+    /* Colors */
+    .text-green  { color: #3fb950 !important; }
+    .text-red    { color: #f85149 !important; }
+    .text-yellow { color: #e3b341 !important; }
+    .text-blue   { color: #58a6ff !important; }
+    .hidden { display: none !important; }
+
+    /* Loading */
+    .loading-overlay { position: fixed; inset: 0; background: rgba(13,17,23,.85); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .spinner-ring { width: 56px; height: 56px; border: 5px solid #21262d; border-top-color: #58a6ff; border-radius: 50%; animation: spin .8s linear infinite; }
+
+    @media (max-width: 576px) {
+      .shares-num { font-size: 2.6rem; }
+      .app-header { padding: .8rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="text-center">
+    <div class="spinner-ring mx-auto mb-3"></div>
+    <div style="font-size:.88rem;color:#8b949e">מנתח נתונים…</div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="app-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h1>INVESTPRO</h1>
+    <span class="sub">מחשבון סטופ לוס · ניתוח טכני · שיטת 5 שלבים</span>
+  </div>
+  <span style="background:#21262d;color:#58a6ff;font-size:.72rem;padding:.35rem .8rem;border-radius:20px;font-weight:700;">Smart Invest</span>
+</div>
+
+<div class="container-fluid px-3 px-md-4 py-4" style="max-width:1100px;">
+
+  <!-- ══ TICKER BAR ══ -->
+  <div class="ticker-bar">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <label class="form-label">סימול מניה <span style="color:#484f58;font-size:.74rem;">(AAPL, TEVA.TA…)</span></label>
+        <div class="d-flex gap-2">
+          <input type="text" id="tickerInput" class="form-control ticker-input" placeholder="AAPL"
+            oninput="this.value=this.value.toUpperCase()"
+            onkeydown="if(event.key==='Enter') fetchAndAnalyze('regular')">
+          <button class="btn-fetch" id="fetchBtn" onclick="fetchAndAnalyze('regular')">
+            📊 טען ונתח
+          </button>
+          <button class="btn-macro" id="macroBtn" onclick="fetchAndAnalyze('macro')" title="ניתוח עם מקרו">
+            🌍
+          </button>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label">גודל תיק</label>
+        <div class="input-group">
+          <input type="number" id="portfolio" class="form-control" value="120000" min="0" step="1000" oninput="calc()">
+          <span class="input-group-text">₪</span>
+        </div>
+        <div style="font-size:.7rem;color:#8b949e;margin-top:.2rem">
+          40% מניות: ₪<span id="budgetDisp">48,000</span> · סיכון/עסקה: ₪<span id="riskDisp">1,200</span>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="live-badge" id="liveBadge">מחיר עדכני: <strong id="liveVal">—</strong></div>
+        <div class="fetch-status" id="fetchStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CALCULATOR SECTION ══ -->
+  <div class="row g-4">
+
+    <!-- Left: Inputs -->
+    <div class="col-12 col-md-5">
+      <div class="card p-3 p-md-4">
+        <div class="card-lbl">נתוני קלט — מחשבון</div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="modeTabs">
+          <li class="nav-item">
+            <button class="nav-link active" id="tab-auto" onclick="switchTab('auto')">חישוב אוטומטי</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="tab-manual" onclick="switchTab('manual')">בחירה ידנית</button>
+          </li>
+        </ul>
+
+        <div class="mb-3">
+          <label class="form-label">מחיר כניסה</label>
+          <div class="input-group">
+            <input type="number" id="entryPrice" class="form-control" placeholder="150.00" min="0" step="0.01" oninput="calc()">
+            <span class="input-group-text">$</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">שער דולר / שקל</label>
+          <div class="input-group">
+            <input type="number" id="fxRate" class="form-control" placeholder="3.75" min="0" step="0.01" oninput="calc()">
+            <span class="input-group-text">₪/$</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">ATR (14 תקופות)</label>
+          <div class="input-group">
+            <input type="number" id="atr" class="form-control" placeholder="3.50" min="0" step="0.01" oninput="calc()">
+            <span class="input-group-text">$</span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">מכפיל ATR <span style="color:#484f58;font-size:.75rem;">(ברירת מחדל 1.5)</span></label>
+          <input type="number" id="atrMult" class="form-control" value="1.5" min="0" step="0.1" oninput="calc()">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">מרווח נוסף <span style="color:#484f58;font-size:.75rem;">(אופציונלי)</span></label>
+          <div class="input-group">
+            <input type="number" id="buffer" class="form-control" placeholder="0.00" min="0" step="0.01" oninput="calc()">
+            <span class="input-group-text">$</span>
+          </div>
+        </div>
+
+        <!-- Manual tab fields -->
+        <div id="manualWrap" style="display:none;">
+          <hr style="border-color:#21262d;margin:.4rem 0 .9rem;">
+          <div class="mb-3">
+            <label class="form-label">כמות מניות ידנית</label>
+            <input type="number" id="manualShares" class="form-control" placeholder="50" min="1" step="1"
+              oninput="onManualSharesChange()">
+          </div>
+          <div style="text-align:center;font-size:.72rem;color:#484f58;margin:-.3rem 0 .5rem;">— או —</div>
+          <div class="mb-1">
+            <label class="form-label">סכום סיכון בשקלים</label>
+            <div class="input-group">
+              <input type="number" id="riskIlsInput" class="form-control" placeholder="500" min="0" step="1"
+                oninput="onRiskIlsChange()">
+              <span class="input-group-text">₪</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-box" id="errorBox"></div>
+      </div>
+    </div>
+
+    <!-- Right: Calculator Results -->
+    <div class="col-12 col-md-7">
+
+      <div class="result-main mb-3">
+        <div class="shares-num" id="resShares">—</div>
+        <div class="shares-lbl" id="resSharesLabel">מניות לרכישה</div>
+      </div>
+
+      <div class="risk-meter mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span style="font-size:.78rem;color:#8b949e;">סיכון עסקה</span>
+          <span>
+            <span class="risk-dot" id="riskDot" style="background:#484f58;"></span>
+            <span id="riskDesc" style="font-size:.78rem;color:#8b949e;">—</span>
+          </span>
+        </div>
+        <div class="risk-bar-bg">
+          <div class="risk-bar-fill" id="riskBar" style="width:0%;background:#3fb950;"></div>
+        </div>
+        <div class="d-flex justify-content-between" style="font-size:.7rem;color:#484f58;">
+          <span>0%</span><span>1%</span><span>2%</span><span>3%+</span>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="stop-box h-100">
+            <div class="section-lbl">סטופ לוס</div>
+            <div class="stop-val" id="resStop">—</div>
+            <div class="stop-sub" id="resStopIls">—</div>
+            <div class="stop-sub" id="resStopPct" style="color:#f85149;">—</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box h-100">
+            <div class="stat-label">מרחק סטופ</div>
+            <div class="stat-val" id="resStopDist">—</div>
+            <div class="stat-sub" id="resStopDistIls">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-label">סיכון בפועל</div>
+            <div class="stat-val" id="resRiskUsd">—</div>
+            <div class="stat-sub" id="resRiskIls">—</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-box">
+            <div class="stat-label">שווי עסקה</div>
+            <div class="stat-val" id="resPositionUsd">—</div>
+            <div class="stat-sub" id="resPositionIls">—</div>
+            <div class="stat-sub" id="resPositionPct">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-lbl">יעדי רווח</div>
+      <div class="row g-2">
+        <div class="col-4">
+          <div class="target-box t1">
+            <div class="t-label">יעד 1 — R×2</div>
+            <div class="t-val" id="resT1">—</div>
+            <div class="t-sub" id="resT1Ils">—</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="target-box t2">
+            <div class="t-label">יעד 2 — R×3</div>
+            <div class="t-val" id="resT2">—</div>
+            <div class="t-sub" id="resT2Ils">—</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="target-box t3">
+            <div class="t-label">יעד 3 — R×5</div>
+            <div class="t-val" id="resT3">—</div>
+            <div class="t-sub" id="resT3Ils">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ ANALYSIS SECTION (shown after fetch) ══ -->
+  <div class="analysis-section hidden" id="analysisSection">
+    <div class="analysis-title">
+      <span>📊</span> ניתוח מלא — שיטת 5 השלבים
+      <span id="analysisTicker" style="font-size:.8rem;color:#8b949e;"></span>
+    </div>
+
+    <!-- Row 1: Grade + Company + Scores -->
+    <div class="row g-3 mb-3">
+
+      <!-- Grade -->
+      <div class="col-6 col-md-3">
+        <div class="card h-100 p-3 text-center">
+          <div class="card-lbl">דירוג</div>
+          <div id="gradeBadge" class="grade-badge grade-A mx-auto">A</div>
+          <div id="gradeLabel" class="grade-lbl A mt-2">—</div>
+          <div id="gradeScore" style="font-size:.72rem;color:#8b949e;margin-top:.15rem;">—</div>
+          <div id="modeBadge" class="mt-2"></div>
+        </div>
+      </div>
+
+      <!-- Company -->
+      <div class="col-6 col-md-4">
+        <div class="card h-100 p-3">
+          <div class="card-lbl">פרטי חברה</div>
+          <div id="companyName" style="font-size:1.1rem;font-weight:800;color:#e6edf3;"></div>
+          <div id="tickerLbl" style="font-size:.8rem;color:#8b949e;margin-top:.18rem;"></div>
+          <div id="sectorLbl" style="font-size:.78rem;color:#58a6ff;margin-top:.25rem;"></div>
+          <hr style="border-color:#21262d;margin:.6rem 0;">
+          <div class="row text-center g-1">
+            <div class="col-4">
+              <div style="font-size:.65rem;color:#8b949e;">מחיר</div>
+              <div id="priceVal" style="font-size:1rem;font-weight:800;color:#58a6ff;"></div>
+            </div>
+            <div class="col-4">
+              <div style="font-size:.65rem;color:#8b949e;">שווי שוק</div>
+              <div id="mcapVal" style="font-size:.88rem;font-weight:800;"></div>
+            </div>
+            <div class="col-4">
+              <div style="font-size:.65rem;color:#8b949e;">P/E</div>
+              <div id="peVal" style="font-size:.88rem;font-weight:800;"></div>
+            </div>
+          </div>
+          <div style="font-size:.68rem;color:#8b949e;margin-top:.35rem;">
+            52W: <span id="w52lo"></span> — <span id="w52hi"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score bars -->
+      <div class="col-12 col-md-5">
+        <div class="card h-100 p-3">
+          <div class="card-lbl">פירוט ציונים</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-row"><span>EQ — איכות כניסה</span><span id="eqScore" class="text-green">—</span></div>
+            <div class="progress"><div id="eqBar" class="progress-bar bg-success" style="width:0%"></div></div>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-row"><span>TS — ניתוח טכני</span><span id="tsScore" class="text-blue">—</span></div>
+            <div class="progress"><div id="tsBar" class="progress-bar" style="width:0%;background:#58a6ff"></div></div>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-row"><span>AS — אנליסטים</span><span id="alsScore" class="text-yellow">—</span></div>
+            <div class="progress"><div id="alsBar" class="progress-bar" style="width:0%;background:#e3b341"></div></div>
+          </div>
+          <div id="macroScoreWrap" class="score-bar-wrap hidden">
+            <div class="score-bar-row"><span>מקרו</span><span id="macroScore" class="text-yellow">—</span></div>
+            <div class="progress"><div id="macroBar" class="progress-bar" style="width:0%;background:#fb8f44"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Technical Indicators -->
+    <div class="card p-3 mb-3">
+      <div class="card-lbl">אינדיקטורים טכניים</div>
+      <div class="ind-grid">
+        <div class="ind-item"><div class="val" id="rsiVal">—</div><div class="lbl">RSI (14)</div></div>
+        <div class="ind-item"><div class="val" id="atrAnalVal">—</div><div class="lbl">ATR (14)</div></div>
+        <div class="ind-item"><div class="val" id="atrPctVal">—</div><div class="lbl">ATR %</div></div>
+        <div class="ind-item"><div class="val" id="sma50Val">—</div><div class="lbl">SMA 50</div></div>
+        <div class="ind-item"><div class="val" id="sma150Val">—</div><div class="lbl">SMA 150</div></div>
+        <div class="ind-item"><div id="above150" class="val">—</div><div class="lbl">מעל 150MA</div></div>
+        <div class="ind-item"><div id="above50"  class="val">—</div><div class="lbl">מעל 50MA</div></div>
+        <div class="ind-item"><div id="volRatioVal" class="val">—</div><div class="lbl">נפח/ממוצע</div></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Trade Levels + Position -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-7">
+        <div class="card p-3">
+          <div class="card-lbl">רמות מסחר — שיטת 5 שלבים</div>
+          <table class="table table-dark table-borderless levels-table mb-0">
+            <thead style="font-size:.7rem;color:#8b949e;">
+              <tr><th>רמה</th><th>מחיר</th><th>הסבר</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="color:#8b949e;">מחיר נוכחי</td><td id="lvlCurrent">—</td><td style="font-size:.76rem;color:#8b949e;">מחיר שוק</td></tr>
+              <tr><td style="color:#8b949e;">אזור כניסה</td><td id="lvlEntry" class="level-entry">—</td><td style="font-size:.76rem;color:#8b949e;">פריצה / חזרה לתמיכה</td></tr>
+              <tr><td style="color:#8b949e;">סטופ לוס</td><td id="lvlStop" class="level-stop2">—</td><td style="font-size:.76rem;color:#8b949e;">מתחת לתמיכה (1.5×ATR)</td></tr>
+              <tr><td style="color:#8b949e;">יעד 1</td><td id="lvlT1" class="level-target">—</td><td style="font-size:.76rem;color:#8b949e;">+3×ATR מכניסה</td></tr>
+              <tr><td style="color:#8b949e;">יעד 2</td><td id="lvlT2" class="level-target">—</td><td style="font-size:.76rem;color:#8b949e;">+5×ATR מכניסה</td></tr>
+              <tr><td style="color:#8b949e;">R/R</td><td id="lvlRR" class="level-rr">—</td><td style="font-size:.76rem;color:#8b949e;">יחס סיכוי/סיכון</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="card p-3">
+          <div class="card-lbl">גודל פוזיציה — ניהול סיכונים</div>
+          <div class="row g-2 mb-2">
+            <div class="col-6"><div class="pos-metric"><div class="val" id="psShares">—</div><div class="lbl">מניות</div></div></div>
+            <div class="col-6"><div class="pos-metric"><div class="val" id="psPosVal">—</div><div class="lbl">שווי פוזיציה</div></div></div>
+            <div class="col-6"><div class="pos-metric"><div class="val" id="psPosNis">—</div><div class="lbl">בשקלים</div></div></div>
+            <div class="col-6"><div class="pos-metric"><div class="val text-yellow" id="psPct">—</div><div class="lbl">% מתקציב</div></div></div>
+          </div>
+          <div style="font-size:.7rem;color:#8b949e;background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:.65rem;">
+            <div>תיק: ₪<span id="psPortfolio">—</span></div>
+            <div>40% מניות: ₪<span id="psBudget">—</span></div>
+            <div>סיכון/עסקה: ₪<span id="psRisk">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Pros + Cons -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="card p-3">
+          <div class="card-lbl">✅ יתרונות להשקעה עכשיו</div>
+          <div id="prosList"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <div class="card-lbl">⚠️ חסרונות וסיכונים</div>
+          <div id="consList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Description + Macro -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-8">
+        <div class="card p-3">
+          <div class="card-lbl">מה החברה עושה</div>
+          <div id="companyDesc" class="desc-text" dir="rtl"></div>
+        </div>
+      </div>
+      <div id="macroPanel" class="col-md-4 hidden">
+        <div class="card p-3 h-100">
+          <div class="card-lbl">🌍 סביבת מקרו</div>
+          <div class="d-flex flex-column gap-2" id="macroItems"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /analysis section -->
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ── Config ──
+const API_BASE = location.protocol === 'file:' ? 'http://localhost:5000' : '';
+let activeTab = 'auto';
+
+// ── Portfolio display ──
+function updatePortfolioDisp() {
+  const p = parseFloat(document.getElementById('portfolio').value) || 120000;
+  document.getElementById('budgetDisp').textContent = fmtN(p * 0.4);
+  document.getElementById('riskDisp').textContent   = fmtN(p * 0.01);
+}
+document.getElementById('portfolio').addEventListener('input', () => { updatePortfolioDisp(); calc(); });
+updatePortfolioDisp();
+
+// ── Tab switching ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-auto').classList.toggle('active', tab === 'auto');
+  document.getElementById('tab-manual').classList.toggle('active', tab === 'manual');
+  document.getElementById('manualWrap').style.display = tab === 'manual' ? 'block' : 'none';
+  if (tab === 'auto') {
+    document.getElementById('manualShares').value = '';
+    document.getElementById('riskIlsInput').value = '';
+  }
+  calc();
+}
+
+// ── Manual shares ──
+function onManualSharesChange() {
+  document.getElementById('riskIlsInput').value = '';
+  calc();
+}
+function onRiskIlsChange() {
+  const riskIls = parseFloat(document.getElementById('riskIlsInput').value);
+  const fxRate  = parseFloat(document.getElementById('fxRate').value);
+  const atr     = parseFloat(document.getElementById('atr').value);
+  const atrMult = parseFloat(document.getElementById('atrMult').value) || 1.5;
+  const buffer  = parseFloat(document.getElementById('buffer').value) || 0;
+  if (riskIls > 0 && fxRate > 0 && atr > 0) {
+    const stopDist = (atr * atrMult) + buffer;
+    const riskUsd  = riskIls / fxRate;
+    const shares   = Math.floor(riskUsd / stopDist);
+    document.getElementById('manualShares').value = shares > 0 ? shares : '';
+  } else {
+    document.getElementById('manualShares').value = '';
+  }
+  calc();
+}
+
+// ── Format helpers ──
+function fmt(val, decimals=2) {
+  return val.toLocaleString('he-IL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtN(val, decimals=0) {
+  return Number(val).toLocaleString('he-IL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtC(val, cur='$', decimals=2) {
+  if (val == null || isNaN(val)) return '—';
+  return cur + Number(val).toLocaleString('he-IL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// ── Calculator ──
+function setDash() {
+  ['resShares','resStop','resStopIls','resStopPct','resStopDist','resStopDistIls',
+   'resRiskUsd','resRiskIls','resPositionUsd','resPositionIls','resPositionPct',
+   'resT1','resT1Ils','resT2','resT2Ils','resT3','resT3Ils'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+  document.getElementById('riskBar').style.width = '0%';
+  document.getElementById('riskDot').style.background = '#484f58';
+  document.getElementById('riskDesc').textContent = '—';
+  document.getElementById('resShares').style.color = '#58a6ff';
+}
+
+function showCalcError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+function clearCalcError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function calc() {
+  clearCalcError();
+  const portfolio  = parseFloat(document.getElementById('portfolio').value);
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+  const fxRate     = parseFloat(document.getElementById('fxRate').value);
+  const atr        = parseFloat(document.getElementById('atr').value);
+  const atrMult    = parseFloat(document.getElementById('atrMult').value) || 1.5;
+  const buffer     = parseFloat(document.getElementById('buffer').value) || 0;
+
+  if (!portfolio || !entryPrice || !fxRate || !atr) { setDash(); return; }
+  if (portfolio <= 0 || entryPrice <= 0 || fxRate <= 0 || atr <= 0) {
+    setDash(); showCalcError('יש להזין ערכים חיוביים בכל השדות'); return;
+  }
+
+  const stopDist  = (atr * atrMult) + buffer;
+  const stopPrice = entryPrice - stopDist;
+  if (stopPrice <= 0) { setDash(); showCalcError('מרחק הסטופ גדול ממחיר הכניסה'); return; }
+
+  const riskPerTrade = portfolio / fxRate * 0.01;
+  let shares;
+  if (activeTab === 'auto') {
+    shares = Math.floor(riskPerTrade / stopDist);
+  } else {
+    shares = parseInt(document.getElementById('manualShares').value) || 0;
+  }
+  if (shares <= 0) {
+    setDash();
+    if (activeTab === 'manual') showCalcError('הזן כמות מניות תקינה');
+    else showCalcError('כמות המניות המחושבת היא אפס — תיק קטן מדי או ATR גבוה מדי');
+    return;
+  }
+
+  const actualRisk    = shares * stopDist;
+  const positionValue = shares * entryPrice;
+  const positionPct   = (positionValue * fxRate / portfolio) * 100;
+  const riskPct       = (actualRisk * fxRate / portfolio) * 100;
+  const stopPct       = (stopDist / entryPrice) * 100;
+  const t1 = entryPrice + stopDist * 2;
+  const t2 = entryPrice + stopDist * 3;
+  const t3 = entryPrice + stopDist * 5;
+
+  document.getElementById('resShares').textContent    = shares.toLocaleString('he-IL');
+  document.getElementById('resSharesLabel').textContent = activeTab === 'auto' ? 'מניות לרכישה (אוטומטי)' : 'מניות לרכישה (ידני)';
+  document.getElementById('resStop').textContent      = '$' + fmt(stopPrice);
+  document.getElementById('resStopIls').textContent   = '₪' + fmt(stopPrice * fxRate);
+  document.getElementById('resStopPct').textContent   = '↓ ' + fmt(stopPct) + '% מתחת לכניסה';
+  document.getElementById('resStopDist').textContent  = '$' + fmt(stopDist);
+  document.getElementById('resStopDistIls').textContent = '₪' + fmt(stopDist * fxRate);
+  document.getElementById('resRiskUsd').textContent   = '$' + fmt(actualRisk);
+  document.getElementById('resRiskIls').textContent   = '₪' + fmt(actualRisk * fxRate);
+  document.getElementById('resPositionUsd').textContent = '$' + fmt(positionValue);
+  document.getElementById('resPositionIls').textContent = '₪' + fmt(positionValue * fxRate);
+  document.getElementById('resPositionPct').textContent = fmt(positionPct) + '% מהתיק';
+  document.getElementById('resT1').textContent   = '$' + fmt(t1);
+  document.getElementById('resT1Ils').textContent = '₪' + fmt(t1 * fxRate);
+  document.getElementById('resT2').textContent   = '$' + fmt(t2);
+  document.getElementById('resT2Ils').textContent = '₪' + fmt(t2 * fxRate);
+  document.getElementById('resT3').textContent   = '$' + fmt(t3);
+  document.getElementById('resT3Ils').textContent = '₪' + fmt(t3 * fxRate);
+
+  const barPct = Math.min((riskPct / 3) * 100, 100);
+  document.getElementById('riskBar').style.width = barPct + '%';
+  const bar = document.getElementById('riskBar');
+  const dot = document.getElementById('riskDot');
+  const desc = document.getElementById('riskDesc');
+  const sharesEl = document.getElementById('resShares');
+  if (riskPct <= 1) {
+    bar.style.background = dot.style.background = '#3fb950';
+    desc.style.color = '#3fb950'; desc.textContent = fmt(riskPct) + '% — סיכון תקין ✓';
+    sharesEl.style.color = '#3fb950';
+  } else if (riskPct <= 2) {
+    bar.style.background = dot.style.background = '#d29922';
+    desc.style.color = '#d29922'; desc.textContent = fmt(riskPct) + '% — סיכון גבוה ⚠';
+    sharesEl.style.color = '#d29922';
+  } else {
+    bar.style.background = dot.style.background = '#f85149';
+    desc.style.color = '#f85149'; desc.textContent = fmt(riskPct) + '% — סיכון מסוכן ✗';
+    sharesEl.style.color = '#f85149';
+  }
+}
+
+// ── Fetch + Analyze ──
+async function fetchAndAnalyze(mode) {
+  const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+  if (!ticker) return;
+
+  const fetchBtn = document.getElementById('fetchBtn');
+  const macroBtn = document.getElementById('macroBtn');
+  const status   = document.getElementById('fetchStatus');
+  const badge    = document.getElementById('liveBadge');
+
+  fetchBtn.disabled = macroBtn.disabled = true;
+  fetchBtn.innerHTML = '<span class="spinner"></span>טוען…';
+  status.textContent = 'מתחבר לשרת…';
+  status.className   = 'fetch-status';
+  badge.style.display = 'none';
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+
+  try {
+    // Run both requests in parallel
+    const [stockRes, analyzeRes] = await Promise.all([
+      fetch(`${API_BASE}/api/stock/${ticker}`, { signal: AbortSignal.timeout(30000) }),
+      fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker, mode, portfolio_size: parseFloat(document.getElementById('portfolio').value) || 120000 }),
+        signal: AbortSignal.timeout(60000)
+      })
+    ]);
+
+    const stockData   = await stockRes.json();
+    const analyzeData = await analyzeRes.json();
+
+    if (!stockRes.ok || stockData.error) throw new Error(stockData.error || 'שגיאה בשליפת נתונים');
+    if (!analyzeRes.ok || analyzeData.error) throw new Error(analyzeData.error || 'שגיאה בניתוח');
+
+    // Fill calculator inputs
+    const { price, atr14, currency, usdils } = stockData;
+    document.getElementById('entryPrice').value = price.toFixed(2);
+    if (atr14)  document.getElementById('atr').value    = atr14.toFixed(2);
+    if (usdils && currency !== 'ILS') document.getElementById('fxRate').value = usdils.toFixed(3);
+    if (currency === 'ILS') document.getElementById('fxRate').value = '1';
+    calc();
+
+    // Live price badge
+    const sym = currency === 'ILS' ? '₪' : '$';
+    document.getElementById('liveVal').textContent = sym + price.toFixed(2);
+    badge.style.display = 'block';
+    status.textContent  = '✓ נתונים עודכנו — ' + ticker;
+    status.className    = 'fetch-status ok';
+
+    // Render analysis
+    renderAnalysis(analyzeData);
+    document.getElementById('analysisSection').classList.remove('hidden');
+    document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch(err) {
+    status.textContent = '✗ ' + (err.message || 'שגיאה — נסה שוב');
+    status.className   = 'fetch-status err';
+  } finally {
+    fetchBtn.disabled = macroBtn.disabled = false;
+    fetchBtn.textContent = '📊 טען ונתח';
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  }
+}
+
+// ── Render Analysis ──
+function renderAnalysis(d) {
+  const cur = d.currency;
+
+  document.getElementById('analysisTicker').textContent = ' — ' + d.ticker;
+
+  // Grade
+  const gb = document.getElementById('gradeBadge');
+  gb.className = 'grade-badge grade-' + d.grade;
+  gb.textContent = d.grade;
+  const labels = { A: 'כנס עכשיו ✅', B: 'כניסה טובה 🟡', C: 'המתן לפולבק 🟠', D: 'הימנע ⛔' };
+  const gl = document.getElementById('gradeLabel');
+  gl.textContent = labels[d.grade] || d.grade;
+  gl.className = 'grade-lbl ' + d.grade;
+  document.getElementById('gradeScore').textContent = 'ציון: ' + d.score + ' / 10';
+  document.getElementById('modeBadge').innerHTML =
+    `<span style="font-size:.7rem;padding:.18rem .55rem;border-radius:99px;font-weight:700;background:${d.mode==='macro'?'rgba(227,179,65,.15)':'rgba(88,166,255,.15)'};color:${d.mode==='macro'?'#e3b341':'#58a6ff'}">${d.mode==='macro'?'🌍 מקרו':'🔵 טכני'}</span>`;
+
+  // Company
+  document.getElementById('companyName').textContent = d.company;
+  document.getElementById('tickerLbl').textContent   = d.ticker + (d.is_il ? ' · ת"א' : ' · NASDAQ/NYSE');
+  document.getElementById('sectorLbl').textContent   = d.sector;
+  document.getElementById('priceVal').textContent    = fmtC(d.price, cur);
+  document.getElementById('mcapVal').textContent     = d.market_cap;
+  document.getElementById('peVal').textContent       = d.pe;
+  document.getElementById('w52lo').textContent       = fmtC(d.week52_lo, cur);
+  document.getElementById('w52hi').textContent       = fmtC(d.week52_hi, cur);
+
+  // Score bars
+  setScore('eqScore',  'eqBar',  d.eq,  d.eq  * 10);
+  setScore('tsScore',  'tsBar',  d.ts,  d.ts  * 10);
+  setScore('alsScore', 'alsBar', d.als, d.als * 10);
+  if (d.mode === 'macro') {
+    document.getElementById('macroScoreWrap').classList.remove('hidden');
+    const mn = d.macro_raw;
+    setScore('macroScore', 'macroBar', mn > 0 ? '+' + mn : mn, (mn + 2) / 4 * 100);
+  } else {
+    document.getElementById('macroScoreWrap').classList.add('hidden');
+  }
+
+  // Technical indicators
+  const rsiEl = document.getElementById('rsiVal');
+  rsiEl.textContent = d.rsi;
+  rsiEl.className = 'val ' + (d.rsi >= 50 && d.rsi <= 65 ? 'text-green' : d.rsi > 70 || d.rsi < 40 ? 'text-red' : 'text-yellow');
+  const atrEl = document.getElementById('atrAnalVal');
+  atrEl.textContent = fmtC(d.atr, cur);
+  atrEl.className = 'val ' + (d.atr_pct < 3 ? 'text-green' : d.atr_pct > 6 ? 'text-red' : 'text-yellow');
+  const atrPEl = document.getElementById('atrPctVal');
+  atrPEl.textContent = d.atr_pct + '%';
+  atrPEl.className = 'val ' + (d.atr_pct < 3 ? 'text-green' : d.atr_pct > 6 ? 'text-red' : 'text-yellow');
+  const sma50El = document.getElementById('sma50Val');
+  sma50El.textContent = fmtC(d.sma50, cur);
+  sma50El.className = 'val ' + (d.above50 ? 'text-green' : 'text-red');
+  const sma150El = document.getElementById('sma150Val');
+  sma150El.textContent = fmtC(d.sma150, cur);
+  sma150El.className = 'val ' + (d.above150 ? 'text-green' : 'text-red');
+  setBool('above150', d.above150);
+  setBool('above50', d.above50);
+  const vrEl = document.getElementById('volRatioVal');
+  vrEl.textContent = d.vol_ratio + 'x';
+  vrEl.className = 'val ' + (d.vol_ratio >= 2 ? 'text-green' : 'text-red');
+
+  // Trade levels
+  const lvlCurEl = document.getElementById('lvlCurrent');
+  lvlCurEl.textContent = fmtC(d.price, cur);
+  lvlCurEl.style.color = d.price < d.ez_lo ? '#e3b341' : d.price <= d.ez_hi ? '#3fb950' : '#f85149';
+  lvlCurEl.style.fontWeight = '700';
+  document.getElementById('lvlEntry').textContent = `${fmtC(d.ez_lo, cur)} — ${fmtC(d.ez_hi, cur)}`;
+  document.getElementById('lvlStop').textContent  = fmtC(d.stop_loss, cur);
+  document.getElementById('lvlT1').textContent    = fmtC(d.target1, cur);
+  document.getElementById('lvlT2').textContent    = fmtC(d.target2, cur);
+  const rrEl = document.getElementById('lvlRR');
+  rrEl.textContent = '1 : ' + d.rr_ratio;
+  rrEl.className = 'level-rr ' + (d.rr_ratio >= 2 ? 'text-green' : 'text-yellow');
+
+  // Position sizing
+  document.getElementById('psShares').textContent   = fmtN(d.num_shares);
+  document.getElementById('psPosVal').textContent   = fmtC(d.pos_val, cur, 0);
+  document.getElementById('psPosNis').textContent   = '₪' + fmtN(d.pos_val_nis);
+  const pctEl = document.getElementById('psPct');
+  pctEl.textContent = d.pct_budget + '%';
+  pctEl.className = 'val ' + (d.pct_budget > 20 ? 'text-red' : 'text-yellow');
+  document.getElementById('psPortfolio').textContent = fmtN(d.portfolio_nis);
+  document.getElementById('psBudget').textContent   = fmtN(d.stock_budget);
+  document.getElementById('psRisk').textContent     = fmtN(d.risk_nis);
+
+  // Pros / Cons
+  document.getElementById('prosList').innerHTML = d.pros.map(p =>
+    `<div class="pro-item"><span style="color:#3fb950;flex-shrink:0;">✓</span><span>${p}</span></div>`).join('');
+  document.getElementById('consList').innerHTML = d.cons.map(c =>
+    `<div class="con-item"><span style="color:#f85149;flex-shrink:0;">✗</span><span>${c}</span></div>`).join('');
+
+  // Description
+  document.getElementById('companyDesc').textContent = d.description || 'אין תיאור זמין.';
+
+  // Macro panel
+  if (d.mode === 'macro' && d.macro_env) {
+    document.getElementById('macroPanel').classList.remove('hidden');
+    const env = d.macro_env;
+    document.getElementById('macroItems').innerHTML = [
+      { icon: '😨', label: 'VIX (פחד)',      val: env.vix,           color: env.fear       ? '#f85149' : '#3fb950' },
+      { icon: '🛢️', label: 'נפט WTI',        val: '$' + env.oil,     color: env.high_oil   ? '#f85149' : '#e3b341' },
+      { icon: '📈', label: 'S&P500 (30 יום)', val: env.sp500_30d+'%', color: env.sp500_30d >= 0 ? '#3fb950' : '#f85149' },
+    ].map(i => `<div class="macro-item"><span style="font-size:1.3rem">${i.icon}</span><div><div class="macro-val" style="color:${i.color}">${i.val}</div><div style="font-size:.7rem;color:#8b949e">${i.label}</div></div></div>`).join('');
+  } else {
+    document.getElementById('macroPanel').classList.add('hidden');
+  }
+}
+
+// ── Helpers ──
+function setScore(labelId, barId, label, pct) {
+  document.getElementById(labelId).textContent = label + '/10';
+  document.getElementById(barId).style.width   = Math.min(100, pct) + '%';
+}
+function setBool(id, val) {
+  const el = document.getElementById(id);
+  el.textContent = val ? 'כן ✓' : 'לא ✗';
+  el.className   = 'val ' + (val ? 'text-green' : 'text-red');
+}
+
+// Init
+setDash();
+</script>
+</body>
+</html>
